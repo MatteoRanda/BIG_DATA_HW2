@@ -46,7 +46,7 @@ However, since we have to compute the frquency, we still count the frequency. ""
 
 
 if __name__ =="__main__":
-    assert len(sys.argv) == 7, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
+    assert len(sys.argv) == 8, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
 
     # These following lines are copied from the DistinctExample script
     conf = SparkConf().setMaster("local[*]").setAppName("DistinctExample")
