@@ -77,7 +77,7 @@ if __name__ =="__main__":
     histogram = {} #hash table for the Count-Min Sketch
 
     # CODE TO PROCESS AN UNBOUNDED STREAM OF DATA IN BATCHES
-    stream = ssc.socketTextStream("algo.dei.unipd.it", portExp, StorageLevel.MEMORY_AND_DISK)
+    stream = ssc.socketTextStream("algo.dei.unipd.it", PORTEXP, StorageLevel.MEMORY_AND_DISK)
     
     # BEWARE: the `foreachRDD` method has "at least once semantics", meaning
     # that the same data might be processed multiple times in case of failure.
