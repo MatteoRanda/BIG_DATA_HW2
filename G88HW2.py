@@ -3,6 +3,8 @@ from pyspark.streaming import StreamingContext
 from pyspark import StorageLevel
 import threading
 import sys
+import numpy as np
+
 
 ################
 #     QUESTIONS
@@ -10,12 +12,28 @@ import sys
 # 1) the phi must be the same for both algorithm?
 # 2) are there any value of hyperparameters we can tend to
 # 3) why we include the element x in S only if the random number is <= p?
+# 4) If I already know that an element appears n*(phi-epsilon times), do I still have to count its frequencies? 
+# 5) Are C and w the same value?
+# 5) For each row of the hash table, the hash function is characterized by its own paur of a,b values? 
+
+################
+#    THINKGS TO CHECK BETTER
+################
+# 1) where to put variables a, b, p, C: in the hash tabl
 
 
 
 N = -1 # To be set via command line
 
-#def StickySampling(stream):
+
+
+def hash_idx(x, p, C, a, b, ):
+    """need to be improved, I have an hash function fro each row, this is just a value"""
+    #integers are in [0,C-1] with suitable C
+    return ((a * x + b) % p ) % C
+
+
+#def StickySampling(time, batch):
 """f(x) is the frequency of the item. 
 The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
 However, since we have to compute the frquency, we still count the frequency. """
@@ -23,30 +41,75 @@ However, since we have to compute the frquency, we still count the frequency. ""
 #   delta, phi = 
 #   epsilon = 
 #  
-#   n = len(stream)
+#   n = len(bathc)
 #   r = ln(1 / (phi*delta)) / epsilon 
 #   p = r/n #sampling rate
 #
 #   output = {} #final set to return with the frequent values and their frequencies 
-#   for x in stream:
+#   for x in batch:
 #       if element in S:
 #           if f(x) >= n * (phi - epsilon):
 #               if x not in output: #we already know that the element is frequent
 #                   add (x,f(x)) to output
 #           f(x) += 1
 #       else:
-#           if np.random.rand(0,1) < p: 
+#           if np.random.uniform(low=0.0, high=1.0) < p: 
 #               add (x,1) to S
 #   return output
 
 
-#def CountMinSketch(): 
+class HashTable:
+    def __init__(self, value, d, w):
+        #define the hash table
+        self.table = [0] * w 
+        self.w = w
+        self.value = value
+
+    def _function(self, a, b, C):
+        # this function compute the hash function. Better see where to put the 
+        # variables, if in this functions or in another one
+        self.a = a
+        self.b = b
+        self.C = C
+        p = 8191
+        return ((self.a * self.value + self.b) % p ) % self.C
+
+
+    def _hash(self, key):
+        #given a key, it returns an index for the key-value pair
+        return hash(key) % self.w
+    
+    def insert(self, key, value):
+        index = self._hash(key) #find the index
+
+        self.table[index] += 1 #increase of 1 the value.
+        # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal 
+        # creating a linked list, but we just increase of 1 the value
+
+
+    
+
+
+
+    
+    def hash_idx(self, w):
+        return ((self.a * self.x + self.b) % p ) % self.C
+    
+#    def add(self, ):
+
+def CountMinSketch(stream, d, C, a, b, p=8191):
+    """d is the number of rows of the hash tables"""
+    columns = [0] * w
+
+ 
+
+        
 
 
 
 
 if __name__ =="__main__":
-    assert len(sys.argv) == 8, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
+    assert len(sys.argv) == 7, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
 
     # These following lines are copied from the DistinctExample script
     conf = SparkConf().setMaster("local[*]").setAppName("DistinctExample")
