@@ -26,13 +26,6 @@ import numpy as np
 N = -1 # To be set via command line
 
 
-
-def hash_idx(x, p, C, a, b, ):
-    """need to be improved, I have an hash function fro each row, this is just a value"""
-    #integers are in [0,C-1] with suitable C
-    return ((a * x + b) % p ) % C
-
-
 #def StickySampling(time, batch):
 """f(x) is the frequency of the item. 
 The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
@@ -59,46 +52,40 @@ However, since we have to compute the frquency, we still count the frequency. ""
 
 
 class HashTable:
-    def __init__(self, value, d, w):
+    def __init__(self, value, w, a, b, C):
         #define the hash table
         self.table = [0] * w 
         self.w = w
-        self.value = value
-
-    def _function(self, a, b, C):
-        # this function compute the hash function. Better see where to put the 
-        # variables, if in this functions or in another one
+        self.value = value        
         self.a = a
         self.b = b
         self.C = C
-        p = 8191
-        return ((self.a * self.value + self.b) % p ) % self.C
 
-
-    def _hash(self, key):
+    def _hash(self, value):
         #given a key, it returns an index for the key-value pair
-        return hash(key) % self.w
-    
-    def insert(self, key, value):
-        index = self._hash(key) #find the index
+        p = 8191
+        return ((self.a * value + self.b) % p ) % self.C
+
+
+    def insert(self, value):
+        index = self._hash(value) #find the index
 
         self.table[index] += 1 #increase of 1 the value.
         # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal 
         # creating a linked list, but we just increase of 1 the value
 
+    def search(self, value):
+        index = self._hash(value)
+        return index
+
 
     
-
-
-
-    
-    def hash_idx(self, w):
-        return ((self.a * self.x + self.b) % p ) % self.C
-    
-#    def add(self, ):
-
 def CountMinSketch(stream, d, C, a, b, p=8191):
-    """d is the number of rows of the hash tables"""
+    """
+    d is the number of rows of the hash tables.
+    Idea: create a object of HashTable class for each row; 
+    each hash function is characterized by a,b values, so we need to store them in pair I think
+    """
     columns = [0] * w
 
  
