@@ -12,9 +12,9 @@ import numpy as np
 # 1) the phi must be the same for both algorithm?
 # 2) are there any value of hyperparameters we can tend to
 # 3) why we include the element x in S only if the random number is <= p?
-# 4) If I already know that an element appears n*(phi-epsilon times), do I still have to count its frequencies? 
+# 4) If I already know that an element appears n*(phi-epsilon times), do I still have to count its frequencies?
 # 5) Are C and w the same value?
-# 5) For each row of the hash table, the hash function is characterized by its own paur of a,b values? 
+# 5) For each row of the hash table, the hash function is characterized by its own paur of a,b values?
 
 ################
 #    THINKGS TO CHECK BETTER
@@ -27,19 +27,19 @@ import numpy as np
 N = -1 # To be set via command line
 
 #def StickySampling(time, batch):
-    """f(x) is the frequency of the item. 
+    """f(x) is the frequency of the item.
     The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
-    However, since we have to compute the frquency, we still count the frequency. 
+    However, since we have to compute the frquency, we still count the frequency.
     """
-#   define hyperparameters: delta in (0,1), phi in (0,1) and epsilon in (0,phi) 
-#   delta, phi = 
-#   epsilon = 
-#  
+#   define hyperparameters: delta in (0,1), phi in (0,1) and epsilon in (0,phi)
+#   delta, phi =
+#   epsilon =
+#
 #   n = len(bathc)
-#   r = ln(1 / (phi*delta)) / epsilon 
+#   r = ln(1 / (phi*delta)) / epsilon
 #   p = r/n #sampling rate
 #
-#   output = {} #final set to return with the frequent values and their frequencies 
+#   output = {} #final set to return with the frequent values and their frequencies
 #   for x in batch:
 #       if element in S:
 #           if f(x) >= n * (phi - epsilon):
@@ -47,7 +47,7 @@ N = -1 # To be set via command line
 #                   add (x,f(x)) to output
 #           f(x) += 1
 #       else:
-#           if np.random.uniform(low=0.0, high=1.0) < p: 
+#           if np.random.uniform(low=0.0, high=1.0) < p:
 #               add (x,1) to S
 #   return output
 
@@ -55,15 +55,15 @@ N = -1 # To be set via command line
 class HashTable:
     def __init__(self, w, a, b, C):
         #define the hash table
-        self.table = [0] * w 
+        self.table = [0] * w
         self.w = w
         self.a = a
         self.b = b
         self.C = C
-    
+
     def __len__(self):
         return len(self.table)
-    
+
     def __contain__(self, key, default = None):
         #if missing key, return default value
         try:
@@ -71,8 +71,8 @@ class HashTable:
         except KeyError:
             return default
 
-    def __getitem__(self, key): 
-        #find the hash value for a given key in input 
+    def __getitem__(self, key):
+        #find the hash value for a given key in input
         index = self._hash(key)
         return self.table[index]
 
@@ -85,26 +85,22 @@ class HashTable:
         index = self._hash(key) #find the index
 
         self.table[index] += 1 #increase of 1 the value.
-        # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal 
+        # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal
         # creating a linked list, but we just increase of 1 the value
 
     def getindex(self, key):
         #find the hash index for a given key in input
         index = self._hash(key)
         return index
-    
+
     def find(self, key):
 
 
-    
 
-
-
-    
 def CountMinSketch(time, batch, delta, epsilon, a, b, C=0, p=8191):
     """
     d is the number of rows of the hash tables.
-    Idea: create a object of HashTable class for each row; 
+    Idea: create a object of HashTable class for each row;
     each hash function is characterized by a,b values, so we need to store them in pair I think
     C = w?
     some starting values: epsilon=0.001, delta=0.01
@@ -122,33 +118,21 @@ def CountMinSketch(time, batch, delta, epsilon, a, b, C=0, p=8191):
 
         hash_matrix.append(HashTable(w=w, a=a, b=b, C=w))
 
-    for x in batch: 
+    for x in batch:
         for j in range(d):
-            hash_matrix[j].insert(x) #update the frequencies 
-    
+            hash_matrix[j].insert(x) #update the frequencies
+
     # how can I find the minimum?
     for x in batch:
         all_freq_x = [hash_matrix[j][x] for j in range(d)]
         estimated_freq.append(x, min(all_freq_x))
-    
+
     return estimated_freq
 
 
 
-
-
-    
-
-
- 
-
-        
-
-
-
-
 if __name__ =="__main__":
-    assert len(sys.argv) == 7, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
+    assert len(sys.argv) == 8, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
 
     # These following lines are copied from the DistinctExample script
     conf = SparkConf().setMaster("local[*]").setAppName("DistinctExample")
@@ -180,23 +164,23 @@ if __name__ =="__main__":
 
     # CODE TO PROCESS AN UNBOUNDED STREAM OF DATA IN BATCHES
     stream = ssc.socketTextStream("algo.dei.unipd.it", PORTEXP, StorageLevel.MEMORY_AND_DISK)
-    
+
     # BEWARE: the `foreachRDD` method has "at least once semantics", meaning
     # that the same data might be processed multiple times in case of failure.
     stream.foreachRDD(lambda time, batch: StickySampling(time, batch))
-    
+
     # MANAGING STREAMING SPARK CONTEXT
     print("Starting streaming engine")
     ssc.start()
     print("Waiting for shutdown condition")
     stopping_condition.wait()
     print("Stopping the streaming engine")
-    
+
     # The following command stops the execution of the stream. The first boolean, if true, also
     # stops the SparkContext, while the second boolean, if true, stops gracefully by waiting for
     # the processing of all received data to be completed. You might get some error messages when the
     # program ends, but they will not affect the correctness.
-    
+
     ssc.stop(False, False)
     print("Streaming engine stopped")
 
