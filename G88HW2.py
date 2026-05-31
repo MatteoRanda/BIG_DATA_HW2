@@ -19,17 +19,18 @@ import numpy as np
 ################
 #    THINKGS TO CHECK BETTER
 ################
-# 1) where to put variables a, b, p, C: in the hash tabl
+# 1) where to put variables a, b, p, C: in the hash table
+# 2) starting values of delta, epsilon
 
 
 
 N = -1 # To be set via command line
 
-
 #def StickySampling(time, batch):
-"""f(x) is the frequency of the item. 
-The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
-However, since we have to compute the frquency, we still count the frequency. """
+    """f(x) is the frequency of the item. 
+    The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
+    However, since we have to compute the frquency, we still count the frequency. 
+    """
 #   define hyperparameters: delta in (0,1), phi in (0,1) and epsilon in (0,phi) 
 #   delta, phi = 
 #   epsilon = 
@@ -52,41 +53,92 @@ However, since we have to compute the frquency, we still count the frequency. ""
 
 
 class HashTable:
-    def __init__(self, value, w, a, b, C):
+    def __init__(self, w, a, b, C):
         #define the hash table
         self.table = [0] * w 
         self.w = w
-        self.value = value        
         self.a = a
         self.b = b
         self.C = C
+    
+    def __len__(self):
+        return len(self.table)
+    
+    def __contain__(self, key, default = None):
+        #if missing key, return default value
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
-    def _hash(self, value):
+    def __getitem__(self, key): 
+        #find the hash value for a given key in input 
+        index = self._hash(key)
+        return self.table[index]
+
+    def _hash(self, key):
         #given a key, it returns an index for the key-value pair
         p = 8191
-        return ((self.a * value + self.b) % p ) % self.C
+        return ((self.a * key + self.b) % p ) % self.C
 
-
-    def insert(self, value):
-        index = self._hash(value) #find the index
+    def __insert__(self, key):
+        index = self._hash(key) #find the index
 
         self.table[index] += 1 #increase of 1 the value.
         # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal 
         # creating a linked list, but we just increase of 1 the value
 
-    def search(self, value):
-        index = self._hash(value)
+    def getindex(self, key):
+        #find the hash index for a given key in input
+        index = self._hash(key)
         return index
+    
+    def find(self, key):
 
 
     
-def CountMinSketch(stream, d, C, a, b, p=8191):
+
+
+
+    
+def CountMinSketch(time, batch, delta, epsilon, a, b, C=0, p=8191):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row; 
     each hash function is characterized by a,b values, so we need to store them in pair I think
+    C = w?
+    some starting values: epsilon=0.001, delta=0.01
     """
-    columns = [0] * w
+    d = log(1/delta) #number rows
+    w = 2/epsilon #number of columns
+
+    estimated_freq = []
+    hash_matrix = []
+    ab_memory = [] #to save the pairs of (a,b)
+    for j in range(d):
+        a = np.random.randint(0,p-1)
+        b = np.random.randint(1,p-1)
+        ab_memory.append((a,b))
+
+        hash_matrix.append(HashTable(w=w, a=a, b=b, C=w))
+
+    for x in batch: 
+        for j in range(d):
+            hash_matrix[j].insert(x) #update the frequencies 
+    
+    # how can I find the minimum?
+    for x in batch:
+        all_freq_x = [hash_matrix[j][x] for j in range(d)]
+        estimated_freq.append(x, min(all_freq_x))
+    
+    return estimated_freq
+
+
+
+
+
+    
+
 
  
 
