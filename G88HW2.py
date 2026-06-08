@@ -14,7 +14,7 @@ import numpy as np
 # 3) why we include the element x in S only if the random number is <= p?
 # 4) If I already know that an element appears n*(phi-epsilon times), do I still have to count its frequencies?
 # 5) Are C and w the same value?
-# 5) For each row of the hash table, the hash function is characterized by its own paur of a,b values?
+# 5) For each row of the hash table, the hash function is characterized by its own pair of a,b values?
 
 ################
 #    THINKGS TO CHECK BETTER
@@ -26,21 +26,17 @@ import numpy as np
 
 N = -1 # To be set via command line
 
-#def StickySampling(time, batch):
+def StickySampling(time, batch):
     """f(x) is the frequency of the item.
     The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
     However, since we have to compute the frquency, we still count the frequency.
     """
-#   define hyperparameters: delta in (0,1), phi in (0,1) and epsilon in (0,phi)
-#   delta, phi =
-#   epsilon =
-#
-#   n = len(bathc)
-#   r = ln(1 / (phi*delta)) / epsilon
-#   p = r/n #sampling rate
-#
-#   output = {} #final set to return with the frequent values and their frequencies
-#   for x in batch:
+    global N, PHI, DELTA, EPSILON 
+    R = ln(1 / (PHI*DELTA)) / EPSILON
+    P = R/N #sampling rate
+
+    output = {} #final set to return with the frequent values and their frequencies
+    for x in batch:
 #       if element in S:
 #           if f(x) >= n * (phi - epsilon):
 #               if x not in output: #we already know that the element is frequent
@@ -53,13 +49,12 @@ N = -1 # To be set via command line
 
 
 class HashTable:
-    def __init__(self, w, a, b, C):
+    def __init__(self, w, a, b):
         #define the hash table
         self.table = [0] * w
         self.w = w
         self.a = a
         self.b = b
-        self.C = C
 
     def __len__(self):
         return len(self.table)
@@ -79,7 +74,7 @@ class HashTable:
     def _hash(self, key):
         #given a key, it returns an index for the key-value pair
         p = 8191
-        return ((self.a * key + self.b) % p ) % self.C
+        return ((self.a * key + self.b) % p ) % self.w
 
     def __insert__(self, key):
         index = self._hash(key) #find the index
@@ -96,8 +91,7 @@ class HashTable:
     def find(self, key):
 
 
-
-def CountMinSketch(time, batch, delta, epsilon, a, b, C=0, p=8191):
+def CountMinSketch(time, batch, N, delta, phi, epsilon, a, b, C=0, p=8191):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row;
@@ -105,29 +99,23 @@ def CountMinSketch(time, batch, delta, epsilon, a, b, C=0, p=8191):
     C = w?
     some starting values: epsilon=0.001, delta=0.01
     """
-    d = log(1/delta) #number rows
+    d = np.log(1/delta) #number rows
     w = 2/epsilon #number of columns
+    min_freq = N * (phi-epsilon) #minimum frequence to be a frequent item
 
-    estimated_freq = []
-    hash_matrix = []
-    ab_memory = [] #to save the pairs of (a,b)
-    for j in range(d):
-        a = np.random.randint(0,p-1)
-        b = np.random.randint(1,p-1)
-        ab_memory.append((a,b))
-
-        hash_matrix.append(HashTable(w=w, a=a, b=b, C=w))
+    item_freq = {} #dict of key-value pairs item : freq
 
     for x in batch:
         for j in range(d):
-            hash_matrix[j].insert(x) #update the frequencies
+            hash_table[j].insert(x) #update the frequencies
+            if x not in item_freq.keys():
+                if hash_table[j] >= min_freq:
+                    item_freq[x] = hash_table[j]
+            if x in item_freq.keys():
+                if hash_table[j] < item_freq[x]:
+                    item_freq[x] = hash_table[j]
 
-    # how can I find the minimum?
-    for x in batch:
-        all_freq_x = [hash_matrix[j][x] for j in range(d)]
-        estimated_freq.append(x, min(all_freq_x))
-
-    return estimated_freq
+    return item_freq
 
 
 
@@ -145,22 +133,30 @@ if __name__ =="__main__":
 
 
     N = int(sys.argv[1])
-    print(f'N = {N}')
+    print(f'n = {N}')
     PHI = int(sys.argv[2]) #frequency threshold in range (0,1)
-    print(f'Frequency Threshold = {N}')
+    print(f'phi = {N}')
     EPSILON = float(sys.argv[3]) #accuracy parameter in range (0, PHI)
-    print(f'Accuracy parameter = {N}')
+    print(f'epsilon = {N}')
     DELTA = float(sys.argv[4]) #confidence parameter in (0,1)
-    print(f'Confidence parameter = {N}')
+    print(f'delta = {N}')
     D = int(sys.argv[5]) #number of rows  in count-min sketch
-    print(f'Number of rows in the count-min sketch = {N}')
+    print(f'd = {N}')
     W = int(sys.argv[6]) #number of columns in count-min sketch
-    print(f'Number of columns in the count-min sketch = {N}')
+    print(f'w = {N}')
     PORTEXP = int(sys.argv[7]) #port number
-    print(f'Receiving data from port = {PORTEXP}')
+    print(f'port = {PORTEXP}')
 
     streamLength = [0]
-    histogram = {} #hash table for the Count-Min Sketch
+    hash_table = [] 
+    ab_memory = [] #to save the pairs of (a,b)
+    for j in range(d):
+        a = np.random.randint(0,p-1)
+        b = np.random.randint(1,p-1)
+        ab_memory.append((a,b))
+
+        hash_table.append(HashTable(w=W, a=a, b=b))
+
 
     # CODE TO PROCESS AN UNBOUNDED STREAM OF DATA IN BATCHES
     stream = ssc.socketTextStream("algo.dei.unipd.it", PORTEXP, StorageLevel.MEMORY_AND_DISK)
@@ -185,7 +181,12 @@ if __name__ =="__main__":
     print("Streaming engine stopped")
 
     # COMPUTE AND PRINT FINAL STATISTICS
-    print("Number of items processed =", streamLength[0])
-    print("Number of distinct items =", len(histogram))
-    largest_item = max(histogram.keys())
-    print("Largest item =", largest_item)
+    print('TRUE FREQUENT ITEMS')
+    for item in true_frequent_items.keys(): 
+        print(f'Item = {item} True Freq = {true_frequent_item[item]}')
+    print('STICKY SAMPLING')
+    for item in sticky_sampling.keys():
+        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
+    print('COUNT-MIN SKETCH')
+    for item in count_min_sketch.keys():
+        print(f'Item = {item} True Freq = {count_min_sketch[item]}')
