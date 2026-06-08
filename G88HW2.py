@@ -9,12 +9,8 @@ import numpy as np
 ################
 #     QUESTIONS
 ################
-# 1) the phi must be the same for both algorithm?
-# 2) are there any value of hyperparameters we can tend to
-# 3) why we include the element x in S only if the random number is <= p?
-# 4) If I already know that an element appears n*(phi-epsilon times), do I still have to count its frequencies?
-# 5) Are C and w the same value?
-# 5) For each row of the hash table, the hash function is characterized by its own pair of a,b values?
+# 1) the phi must be the same for both algorithm? Yes
+# 2) are there any value of hyperparameters we can tend to? Given by prof
 
 ################
 #    THINKGS TO CHECK BETTER
@@ -22,21 +18,51 @@ import numpy as np
 # 1) where to put variables a, b, p, C: in the hash table
 # 2) starting values of delta, epsilon
 
+################
+#    MISSING
+################
+# 1) compute exact frequency
+
 
 
 N = -1 # To be set via command line
+
+def Exact_Counting(time, batch):
+    global true_frequent_items, N, PHI
+    frequency = {}
+    for x in batch:
+        if x in frequency.keys():
+            frequency[x] += 1
+            if x in true_frequent_items.keys():
+                true_frequent_items[x] += 1
+            else:
+                if frequency[x] >= N * PHI:
+                    true_frequent_items[x] = 1
+        else:
+            frequency[x] = 1
+
 
 def StickySampling(time, batch):
     """f(x) is the frequency of the item.
     The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
     However, since we have to compute the frquency, we still count the frequency.
     """
-    global N, PHI, DELTA, EPSILON 
-    R = ln(1 / (PHI*DELTA)) / EPSILON
-    P = R/N #sampling rate
+    global N, PHI, DELTA, EPSILON, histogram, sticky_sampling
+    R = np.log(1 / (PHI*DELTA)) / EPSILON
+    p = R/N #sampling rate
+    min_freq = N*PHI
 
-    output = {} #final set to return with the frequent values and their frequencies
-    for x in batch:
+    for x in batch: #process stream
+        if x in histogram.keys(): #if x is in the hash_table, we can increase frequence
+            histogram[x] += 1
+        else: #if not, we randomly decide to put it in histogram
+            if np.random.uniform(low = 0.0, high=1.0) < p:
+                histogram[x] = 1
+    for x in histogram.keys():
+        if histogram[x] >= min_freq:
+            sticky_sampling[x] = histogram[x]
+            
+
 #       if element in S:
 #           if f(x) >= n * (phi - epsilon):
 #               if x not in output: #we already know that the element is frequent
@@ -91,7 +117,7 @@ class HashTable:
     def find(self, key):
 
 
-def CountMinSketch(time, batch, N, delta, phi, epsilon, a, b, C=0, p=8191):
+def CountMinSketch(time, batch):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row;
@@ -99,14 +125,12 @@ def CountMinSketch(time, batch, N, delta, phi, epsilon, a, b, C=0, p=8191):
     C = w?
     some starting values: epsilon=0.001, delta=0.01
     """
-    d = np.log(1/delta) #number rows
-    w = 2/epsilon #number of columns
-    min_freq = N * (phi-epsilon) #minimum frequence to be a frequent item
+    global N, PHI, D, W, item_freq
+    min_freq = N * PHI #minimum frequence to be a frequent item
 
-    item_freq = {} #dict of key-value pairs item : freq
 
     for x in batch:
-        for j in range(d):
+        for j in range(D):
             hash_table[j].insert(x) #update the frequencies
             if x not in item_freq.keys():
                 if hash_table[j] >= min_freq:
@@ -147,12 +171,16 @@ if __name__ =="__main__":
     PORTEXP = int(sys.argv[7]) #port number
     print(f'port = {PORTEXP}')
 
-    streamLength = [0]
+
+    sticky_sampling = {} #final set of Sticky sampling with the frequent values and their frequencies
+
+    P=8191
+    items_freq = {} #dict of key-value pairs item : freq for count-min sketch
     hash_table = [] 
     ab_memory = [] #to save the pairs of (a,b)
     for j in range(d):
-        a = np.random.randint(0,p-1)
-        b = np.random.randint(1,p-1)
+        a = np.random.randint(0,P-1)
+        b = np.random.randint(1,P-1)
         ab_memory.append((a,b))
 
         hash_table.append(HashTable(w=W, a=a, b=b))
