@@ -17,6 +17,8 @@ import numpy as np
 ################
 # 1) where to put variables a, b, p, C: in the hash table
 # 2) starting values of delta, epsilon
+# 3) how to return the value in count-min sketch
+
 
 ################
 #    MISSING
@@ -52,26 +54,18 @@ def StickySampling(time, batch):
     p = R/N #sampling rate
     min_freq = N*PHI
 
-    for x in batch: #process stream
-        if x in histogram.keys(): #if x is in the hash_table, we can increase frequence
+    # Extract the distinct items from the batch
+    batch_items = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda i1, i2: 1).collectAsMap()
+
+    for x in batch_items: #process stream
+        if x in histogram: #if x is in the hash_table, we can increase frequence
             histogram[x] += 1
         else: #if not, we randomly decide to put it in histogram
             if np.random.uniform(low = 0.0, high=1.0) < p:
                 histogram[x] = 1
-    for x in histogram.keys():
+    for x in histogram:
         if histogram[x] >= min_freq:
             sticky_sampling[x] = histogram[x]
-            
-
-#       if element in S:
-#           if f(x) >= n * (phi - epsilon):
-#               if x not in output: #we already know that the element is frequent
-#                   add (x,f(x)) to output
-#           f(x) += 1
-#       else:
-#           if np.random.uniform(low=0.0, high=1.0) < p:
-#               add (x,1) to S
-#   return output
 
 
 class HashTable:
@@ -210,7 +204,7 @@ if __name__ =="__main__":
 
     # COMPUTE AND PRINT FINAL STATISTICS
     print('TRUE FREQUENT ITEMS')
-    for item in true_frequent_items.keys(): 
+    for item in true_frequent_item.keys(): 
         print(f'Item = {item} True Freq = {true_frequent_item[item]}')
     print('STICKY SAMPLING')
     for item in sticky_sampling.keys():
