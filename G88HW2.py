@@ -49,32 +49,54 @@ def StickySampling(time, batch):
     The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
     However, since we have to compute the frquency, we still count the frequency.
     """
-    global N, PHI, DELTA, EPSILON, histogram, sticky_sampling
+    global N, PHI, DELTA, EPSILON, histogram
     R = np.log(1 / (PHI*DELTA)) / EPSILON
     p = R/N #sampling rate
     min_freq = N*PHI
 
-    # Extract the distinct items from the batch
-    batch_items = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda i1, i2: 1).collectAsMap()
+    # use at the end: .filter(lambda x: x[1]> N*PHI).collectAsMap()
+    # filter return only the elements satisfying the condition; 
+
+    item_freq = batch.map(lambda s: (int(s), 1))
+    .reduceByKey(lambda a, b: a+b)
+    .collectAsMap() # collectAsMap() returns the RDD as a dictionary 
+    #we created a dictionary with key = item, value = frequency of the item
+
+
+    for x, c in item_freq.items(): 
+        if x in histogram:
+            histogram[x] += c
+        else:
+            if np.random.uniform(low = 0.0, high=1.0) < p:
+            histogram[x] = c
+    
+    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
+
+            
+
 
     for x in batch_items: #process stream
-        if x in histogram: #if x is in the hash_table, we can increase frequence
-            histogram[x] += 1
-        else: #if not, we randomly decide to put it in histogram
-            if np.random.uniform(low = 0.0, high=1.0) < p:
-                histogram[x] = 1
-    for x in histogram:
-        if histogram[x] >= min_freq:
-            sticky_sampling[x] = histogram[x]
+        if x in sticky_sampling.keys():
+            #if the element is already a frequent item, we don't need to touch the histogram, but we increase directly the solution
+            sticky_sampling[x] += 1 
+        else:
+            if x in histogram: #if x is in the hash_table, we can increase frequence
+                histogram[x] += 1
+                if histogram[x] >= PHI*N:
+                    sticky_sampling[x] = histogram[x] 
+            else: #if not, we randomly decide to put it in histogram
+                if np.random.uniform(low = 0.0, high=1.0) < p:
+                    histogram[x] = 1
 
 
 class HashTable:
-    def __init__(self, w, a, b):
+    def __init__(self, w, a, b, p):
         #define the hash table
         self.table = [0] * w
         self.w = w
         self.a = a
         self.b = b
+        self.p = p
 
     def __len__(self):
         return len(self.table)
@@ -93,13 +115,11 @@ class HashTable:
 
     def _hash(self, key):
         #given a key, it returns an index for the key-value pair
-        p = 8191
-        return ((self.a * key + self.b) % p ) % self.w
+        return ((self.a * key + self.b) % self.p ) % self.w
 
-    def __insert__(self, key):
+    def insert(self, key, frequency):
         index = self._hash(key) #find the index
-
-        self.table[index] += 1 #increase of 1 the value.
+        self.table[index] += frequency #increase the value.
         # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal
         # creating a linked list, but we just increase of 1 the value
 
@@ -107,8 +127,6 @@ class HashTable:
         #find the hash index for a given key in input
         index = self._hash(key)
         return index
-
-    def find(self, key):
 
 
 def CountMinSketch(time, batch):
@@ -119,21 +137,26 @@ def CountMinSketch(time, batch):
     C = w?
     some starting values: epsilon=0.001, delta=0.01
     """
-    global N, PHI, D, W, item_freq
+    global N, PHI, D, W, count_min_sketch, output_countmin
+    #count_min_sketch is an hash table with D rows and W columns
     min_freq = N * PHI #minimum frequence to be a frequent item
 
+    #we can remove this from the algoirhtm and compute it once outside the functions
+    item_freq = batch.map(lambda s: (int(s), 1))
+    .reduceByKey(lambda a, b: a+b)
+    .collectAsMap() # collectAsMap() returns the RDD as a dictionary 
+    #we created a dictionary with key = item, value = frequency of the item
 
-    for x in batch:
+    for x, c in item_freq.items():
+        minimum = float('inf')
         for j in range(D):
-            hash_table[j].insert(x) #update the frequencies
-            if x not in item_freq.keys():
-                if hash_table[j] >= min_freq:
-                    item_freq[x] = hash_table[j]
-            if x in item_freq.keys():
-                if hash_table[j] < item_freq[x]:
-                    item_freq[x] = hash_table[j]
+            count_min_sketch[j].insert(x, c)
 
-    return item_freq
+            if count_min_sketch[j][x] < minimum:
+                minimum = count_min_sketch[j][x]
+
+        if minimum >= min_freq:
+            output_countmin[x] = minimum                
 
 
 
@@ -167,17 +190,19 @@ if __name__ =="__main__":
 
 
     sticky_sampling = {} #final set of Sticky sampling with the frequent values and their frequencies
+    count_min_sketch = {}
+    output_countmin = {}
 
     P=8191
     items_freq = {} #dict of key-value pairs item : freq for count-min sketch
     hash_table = [] 
     ab_memory = [] #to save the pairs of (a,b)
     for j in range(d):
-        a = np.random.randint(0,P-1)
-        b = np.random.randint(1,P-1)
+        a = np.random.randint(1,P-1)
+        b = np.random.randint(0,P-1)
         ab_memory.append((a,b))
 
-        hash_table.append(HashTable(w=W, a=a, b=b))
+        hash_table.append(HashTable(w=W, a=a, b=b, p=P))
 
 
     # CODE TO PROCESS AN UNBOUNDED STREAM OF DATA IN BATCHES
