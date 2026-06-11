@@ -69,63 +69,57 @@ class HashTable:
         return index
 
 #################### MUST BE CHANGED
-def ExactCounting(item_freq):
-    global true_frequent_items, N, PHI
+def ExactCounting(x, c, min_freq):
+    global true_frequent_items
     frequency = {}
-    for x,c in item_freq.items():
-        if x in frequency.keys():
-            frequency[x] += 1
-            if x in true_frequent_items.keys():
-                true_frequent_items[x] += 1
-            else:
-                if frequency[x] >= N * PHI:
-                    true_frequent_items[x] = 1
+    if x in frequency.keys():
+        frequency[x] += 1
+        if x in true_frequent_items.keys():
+            true_frequent_items[x] += c
         else:
-            frequency[x] = 1
+            if frequency[x] >= min_freq:
+                true_frequent_items[x] = c
+    else:
+        frequency[x] = 1
 
 
-def StickySampling(item_freq):
+def StickySampling(x, c, min_freq):
     """f(x) is the frequency of the item.
-    The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
+    The check to add a frequent item in the output is done in the if to avoid a second for cycle.
     However, since we have to compute the frquency, we still count the frequency.
     """
     global N, PHI, DELTA, EPSILON, histogram
     R = np.log(1 / (PHI*DELTA)) / EPSILON
     p = R/N #sampling rate
-    min_freq = N*PHI
 
-    for x, c in item_freq.items(): 
-        if x in histogram:
-            histogram[x] += c
-        else:
-            if np.random.uniform(low = 0.0, high=1.0) < p:
+    if x in histogram:
+        histogram[x] += c
+    else:
+        if np.random.uniform(low = 0.0, high=1.0) < p:
             histogram[x] = c
     
     sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
 
 
-def CountMinSketch(item_freq):
+def CountMinSketch(x, c, min_freq):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row;
     each hash function is characterized by a,b values, so we need to store them in pair I think
-    C = w?
     some starting values: epsilon=0.001, delta=0.01
     """
     global N, PHI, D, W, count_min_sketch, output_countmin
     #count_min_sketch is an hash table with D rows and W columns
-    min_freq = N * PHI #minimum frequence to be a frequent item
+    minimum = float('inf')
 
-    for x, c in item_freq.items():
-        minimum = float('inf')
-        for j in range(D):
-            count_min_sketch[j].insert(x, c)
+    for j in range(D):
+        count_min_sketch[j].insert(x, c)
 
-            if count_min_sketch[j][x] < minimum:
-                minimum = count_min_sketch[j][x]
+        if count_min_sketch[j][x] < minimum:
+            minimum = count_min_sketch[j][x]
 
-        if minimum >= min_freq:
-            output_countmin[x] = minimum                
+    if minimum >= min_freq:
+        output_countmin[x] = minimum                
 
 def Container(time, batch):
 
@@ -136,10 +130,11 @@ def Container(time, batch):
     item_freq = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda a, b: a+b).collectAsMap() # collectAsMap() returns the RDD as a dictionary 
     # collectAsMap() returns the RDD as a dictionary 
     #we created a dictionary with key = item, value = frequency of the item
+    for x, c in item_freq.items():
 
-    ExactCounting(item_freq)
-    StickySampling(item_freq)
-    CountMinSketch(item_freq)
+        ExactCounting(x, c, min_freq)
+        StickySampling(x, c, min_freq)
+        CountMinSketch(x, c, min_freq)
 
 
 if __name__ =="__main__":
