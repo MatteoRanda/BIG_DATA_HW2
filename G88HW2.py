@@ -164,7 +164,7 @@ if __name__ =="__main__":
     assert len(sys.argv) == 8, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
 
     # These following lines are copied from the DistinctExample script
-    conf = SparkConf().setMaster("local[*]").setAppName("DistinctExample")
+    conf = SparkConf().setMaster("local[*]").setAppName("G88HW2")
 
     sc = SparkContext(conf=conf)
     ssc = StreamingContext(sc, 0.1)  # Batch duration of 0.1 sec = 100 ms
@@ -188,10 +188,11 @@ if __name__ =="__main__":
     PORTEXP = int(sys.argv[7]) #port number
     print(f'port = {PORTEXP}')
 
-
+    true_frequent_item = {}
     sticky_sampling = {} #final set of Sticky sampling with the frequent values and their frequencies
     count_min_sketch = {}
-    output_countmin = {}
+    output_countmin = {} #to print
+    
 
     P=8191
     items_freq = {} #dict of key-value pairs item : freq for count-min sketch
@@ -211,6 +212,8 @@ if __name__ =="__main__":
     # BEWARE: the `foreachRDD` method has "at least once semantics", meaning
     # that the same data might be processed multiple times in case of failure.
     stream.foreachRDD(lambda time, batch: StickySampling(time, batch))
+
+
 
     # MANAGING STREAMING SPARK CONTEXT
     print("Starting streaming engine")
