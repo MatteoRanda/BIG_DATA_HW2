@@ -126,9 +126,7 @@ def CountMinSketch(time, batch):
     min_freq = N * PHI #minimum frequence to be a frequent item
 
     #we can remove this from the algoirhtm and compute it once outside the functions
-    item_freq = batch.map(lambda s: (int(s), 1))
-    .reduceByKey(lambda a, b: a+b)
-    .collectAsMap() # collectAsMap() returns the RDD as a dictionary 
+    item_freq = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda a, b: a+b).collectAsMap() # collectAsMap() returns the RDD as a dictionary 
     #we created a dictionary with key = item, value = frequency of the item
 
     for x, c in item_freq.items():
@@ -141,6 +139,18 @@ def CountMinSketch(time, batch):
 
         if minimum >= min_freq:
             output_countmin[x] = minimum                
+
+def Contenitore(time, batch):
+    global count_min_sketch, output_countmin, histogram, true_frequent_items, N, PHI, DELTA, EPSILON, D, W 
+    #count_min_sketch is an hash table with D rows and W columns
+    min_freq = N * PHI #minimum frequence to be a frequent item
+
+    ExactCounting(time, batch)
+    StickySampling(time, batch)
+    CountMinSketch(time, batch)
+
+
+
 
 
 
@@ -172,7 +182,7 @@ if __name__ =="__main__":
     PORTEXP = int(sys.argv[7]) #port number
     print(f'port = {PORTEXP}')
 
-    true_frequent_item = {}
+    true_frequent_items = {}
 
     histogram = {}
     sticky_sampling = {} #final set of Sticky sampling with the frequent values and their frequencies
@@ -221,11 +231,11 @@ if __name__ =="__main__":
 
     # COMPUTE AND PRINT FINAL STATISTICS
     print('TRUE FREQUENT ITEMS')
-    for item in true_frequent_item.keys(): 
-        print(f'Item = {item} True Freq = {true_frequent_item[item]}')
+    for item in true_frequent_items.keys(): 
+        print(f'Item = {item} True Freq = {true_frequent_items[item]}')
     print('STICKY SAMPLING')
     for item in sticky_sampling.keys():
         print(f'Item = {item} True Freq = {sticky_sampling[item]}')
     print('COUNT-MIN SKETCH')
-    for item in count_min_sketch.keys():
-        print(f'Item = {item} True Freq = {count_min_sketch[item]}')
+    for item in output_countmin.keys():
+        print(f'Item = {item} True Freq = {output_countmin[item]}')
