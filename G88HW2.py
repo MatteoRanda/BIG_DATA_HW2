@@ -68,11 +68,11 @@ class HashTable:
         index = self._hash(key)
         return index
 
-
-def ExactCounting(time, batch):
+#################### MUST BE CHANGED
+def ExactCounting(item_freq):
     global true_frequent_items, N, PHI
     frequency = {}
-    for x in batch:
+    for x,c in item_freq.items():
         if x in frequency.keys():
             frequency[x] += 1
             if x in true_frequent_items.keys():
@@ -84,7 +84,7 @@ def ExactCounting(time, batch):
             frequency[x] = 1
 
 
-def StickySampling(time, batch):
+def StickySampling(item_freq):
     """f(x) is the frequency of the item.
     The check to add a frequent item in the output is done in the if to avoid a second fro cycle.
     However, since we have to compute the frquency, we still count the frequency.
@@ -93,15 +93,6 @@ def StickySampling(time, batch):
     R = np.log(1 / (PHI*DELTA)) / EPSILON
     p = R/N #sampling rate
     min_freq = N*PHI
-
-    # use at the end: .filter(lambda x: x[1]> N*PHI).collectAsMap()
-    # filter return only the elements satisfying the condition; 
-
-    item_freq = batch.map(lambda s: (int(s), 1))
-    .reduceByKey(lambda a, b: a+b)
-    .collectAsMap() # collectAsMap() returns the RDD as a dictionary 
-    #we created a dictionary with key = item, value = frequency of the item
-
 
     for x, c in item_freq.items(): 
         if x in histogram:
@@ -113,7 +104,7 @@ def StickySampling(time, batch):
     sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
 
 
-def CountMinSketch(time, batch):
+def CountMinSketch(item_freq):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row;
@@ -124,10 +115,6 @@ def CountMinSketch(time, batch):
     global N, PHI, D, W, count_min_sketch, output_countmin
     #count_min_sketch is an hash table with D rows and W columns
     min_freq = N * PHI #minimum frequence to be a frequent item
-
-    #we can remove this from the algoirhtm and compute it once outside the functions
-    item_freq = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda a, b: a+b).collectAsMap() # collectAsMap() returns the RDD as a dictionary 
-    #we created a dictionary with key = item, value = frequency of the item
 
     for x, c in item_freq.items():
         minimum = float('inf')
@@ -140,18 +127,19 @@ def CountMinSketch(time, batch):
         if minimum >= min_freq:
             output_countmin[x] = minimum                
 
-def Contenitore(time, batch):
+def Container(time, batch):
+
     global count_min_sketch, output_countmin, histogram, true_frequent_items, N, PHI, DELTA, EPSILON, D, W 
     #count_min_sketch is an hash table with D rows and W columns
     min_freq = N * PHI #minimum frequence to be a frequent item
 
-    ExactCounting(time, batch)
-    StickySampling(time, batch)
-    CountMinSketch(time, batch)
+    item_freq = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda a, b: a+b).collectAsMap() # collectAsMap() returns the RDD as a dictionary 
+    # collectAsMap() returns the RDD as a dictionary 
+    #we created a dictionary with key = item, value = frequency of the item
 
-
-
-
+    ExactCounting(item_freq)
+    StickySampling(item_freq)
+    CountMinSketch(item_freq)
 
 
 if __name__ =="__main__":
@@ -208,10 +196,7 @@ if __name__ =="__main__":
 
     # BEWARE: the `foreachRDD` method has "at least once semantics", meaning
     # that the same data might be processed multiple times in case of failure.
-    stream.foreachRDD(lambda time, batch: ExactCounting(time, batch))
-    stream.foreachRDD(lambda time, batch: StickySampling(time, batch))
-    stream.foreachRDD(lambda time, batch: CountMinSketch(time, batch))
-    
+    stream.foreachRDD(lambda time, batch: Container(time, batch))    
 
 
     # MANAGING STREAMING SPARK CONTEXT
