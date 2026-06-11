@@ -29,7 +29,47 @@ import numpy as np
 
 N = -1 # To be set via command line
 
-def Exact_Counting(time, batch):
+class HashTable:
+    def __init__(self, w, a, b, p):
+        #define the hash table
+        self.table = [0] * w
+        self.w = w
+        self.a = a
+        self.b = b
+        self.p = p
+
+    def __len__(self):
+        return len(self.table)
+
+    def __contain__(self, key, default = None):
+        #if missing key, return default value
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __getitem__(self, key):
+        #find the hash value for a given key in input
+        index = self._hash(key)
+        return self.table[index]
+
+    def _hash(self, key):
+        #given a key, it returns an index for the key-value pair
+        return ((self.a * key + self.b) % self.p ) % self.w
+
+    def insert(self, key, frequency):
+        index = self._hash(key) #find the index
+        self.table[index] += frequency #increase the value.
+        # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal
+        # creating a linked list, but we just increase of 1 the value
+
+    def getindex(self, key):
+        #find the hash index for a given key in input
+        index = self._hash(key)
+        return index
+
+
+def ExactCounting(time, batch):
     global true_frequent_items, N, PHI
     frequency = {}
     for x in batch:
@@ -71,62 +111,6 @@ def StickySampling(time, batch):
             histogram[x] = c
     
     sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
-
-            
-
-
-    for x in batch_items: #process stream
-        if x in sticky_sampling.keys():
-            #if the element is already a frequent item, we don't need to touch the histogram, but we increase directly the solution
-            sticky_sampling[x] += 1 
-        else:
-            if x in histogram: #if x is in the hash_table, we can increase frequence
-                histogram[x] += 1
-                if histogram[x] >= PHI*N:
-                    sticky_sampling[x] = histogram[x] 
-            else: #if not, we randomly decide to put it in histogram
-                if np.random.uniform(low = 0.0, high=1.0) < p:
-                    histogram[x] = 1
-
-
-class HashTable:
-    def __init__(self, w, a, b, p):
-        #define the hash table
-        self.table = [0] * w
-        self.w = w
-        self.a = a
-        self.b = b
-        self.p = p
-
-    def __len__(self):
-        return len(self.table)
-
-    def __contain__(self, key, default = None):
-        #if missing key, return default value
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-    def __getitem__(self, key):
-        #find the hash value for a given key in input
-        index = self._hash(key)
-        return self.table[index]
-
-    def _hash(self, key):
-        #given a key, it returns an index for the key-value pair
-        return ((self.a * key + self.b) % self.p ) % self.w
-
-    def insert(self, key, frequency):
-        index = self._hash(key) #find the index
-        self.table[index] += frequency #increase the value.
-        # Recall that in CountMinSketch algorithm, the collision in the hash table is not handled as ususal
-        # creating a linked list, but we just increase of 1 the value
-
-    def getindex(self, key):
-        #find the hash index for a given key in input
-        index = self._hash(key)
-        return index
 
 
 def CountMinSketch(time, batch):
@@ -189,7 +173,10 @@ if __name__ =="__main__":
     print(f'port = {PORTEXP}')
 
     true_frequent_item = {}
+
+    histogram = {}
     sticky_sampling = {} #final set of Sticky sampling with the frequent values and their frequencies
+    
     count_min_sketch = {}
     output_countmin = {} #to print
     
@@ -211,8 +198,10 @@ if __name__ =="__main__":
 
     # BEWARE: the `foreachRDD` method has "at least once semantics", meaning
     # that the same data might be processed multiple times in case of failure.
+    stream.foreachRDD(lambda time, batch: ExactCounting(time, batch))
     stream.foreachRDD(lambda time, batch: StickySampling(time, batch))
-
+    stream.foreachRDD(lambda time, batch: CountMinSketch(time, batch))
+    
 
 
     # MANAGING STREAMING SPARK CONTEXT
