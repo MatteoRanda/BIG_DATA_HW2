@@ -94,7 +94,7 @@ def StickySampling(x, c):
     
 
 
-def CountMinSketch(x, c, min_freq):
+def CountMinSketch(x, c):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row;
@@ -156,7 +156,7 @@ if __name__ =="__main__":
 
     N = int(sys.argv[1]) #maximum number of elements that can be processed
     print(f'n = {N}')
-    PHI = int(sys.argv[2]) #frequency threshold in range (0,1)
+    PHI = float(sys.argv[2]) #frequency threshold in range (0,1)
     print(f'phi = {PHI}')
     EPSILON = float(sys.argv[3]) #accuracy parameter in range (0, PHI)
     print(f'epsilon = {EPSILON}')
@@ -184,7 +184,7 @@ if __name__ =="__main__":
     items_freq = {} #dict of key-value pairs item : freq for count-min sketch
     count_min_sketch = [] 
     ab_memory = [] #to save the pairs of (a,b)
-    for j in range(d):
+    for j in range(D):
         a = np.random.randint(1,P-1)
         b = np.random.randint(0,P-1)
         ab_memory.append((a,b))
@@ -199,8 +199,7 @@ if __name__ =="__main__":
     # that the same data might be processed multiple times in case of failure.
     stream.foreachRDD(lambda time, batch: Container(time, batch))    
 
-    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
-    true_frequent_items = {x : freq for x, freq in exact_frequency.items() if freq >= min_freq}
+
 
 
     # MANAGING STREAMING SPARK CONTEXT
@@ -217,6 +216,9 @@ if __name__ =="__main__":
 
     ssc.stop(False, False)
     print("Streaming engine stopped")
+
+    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
+    true_frequent_items = {x : freq for x, freq in exact_frequency.items() if freq >= min_freq}
 
     # COMPUTE AND PRINT FINAL STATISTICS
     print('TRUE FREQUENT ITEMS')
