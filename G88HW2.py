@@ -157,23 +157,21 @@ if __name__ =="__main__":
     stopping_condition = threading.Event() # semafor
 
 
-    N = int(sys.argv[1])
-    print(f'n = {N}')
+    THRESHOLD = int(sys.argv[1])
+    print(f'n = {THRESHOLD}')
     PHI = int(sys.argv[2]) #frequency threshold in range (0,1)
-    print(f'phi = {N}')
+    print(f'phi = {PHI}')
     EPSILON = float(sys.argv[3]) #accuracy parameter in range (0, PHI)
-    print(f'epsilon = {N}')
+    print(f'epsilon = {EPSILON}')
     DELTA = float(sys.argv[4]) #confidence parameter in (0,1)
-    print(f'delta = {N}')
+    print(f'delta = {DELTA}')
     D = int(sys.argv[5]) #number of rows  in count-min sketch
-    print(f'd = {N}')
+    print(f'd = {D}')
     W = int(sys.argv[6]) #number of columns in count-min sketch
-    print(f'w = {N}')
+    print(f'w = {W}')
     PORTEXP = int(sys.argv[7]) #port number
     print(f'port = {PORTEXP}')
 
-    THRESHOLD = int(sys.argv[2])
-    print("Threshold = ", THRESHOLD)
 
     streamLength = [0]
     exact_frequency = {}
