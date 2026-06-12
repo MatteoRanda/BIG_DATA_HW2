@@ -27,7 +27,7 @@ import numpy as np
 
 
 
-THRESHOLD = -1 # To be set via command line
+N = -1 # To be set via command line
 
 class HashTable:
     def __init__(self, w, a, b, p):
@@ -84,12 +84,12 @@ def StickySampling(x, c):
     """
     global N, PHI, DELTA, EPSILON, histogram
     R = np.log(1 / (PHI*DELTA)) / EPSILON
-    p = R/N #sampling rate
+    pr = R/N #sampling rate
 
     if x in histogram:
         histogram[x] += c
     else:
-        if np.random.uniform(low = 0.0, high=1.0) < p:
+        if np.random.uniform(low = 0.0, high=1.0) < pr:
             histogram[x] = c
     
 
@@ -101,7 +101,7 @@ def CountMinSketch(x, c, min_freq):
     each hash function is characterized by a,b values, so we need to store them in pair I think
     some starting values: epsilon=0.001, delta=0.01
     """
-    global N, PHI, D, W, count_min_sketch, output_countmin
+    global N, PHI, D, W, count_min_sketch, output_countmin, min_freq
     #count_min_sketch is an hash table with D rows and W columns
     minimum = float('inf')
 
@@ -119,29 +119,26 @@ def Container(time, batch):
 
     global count_min_sketch, output_countmin, true_frequent_items
     global histogram, exact_frequency 
-    global N, PHI, DELTA, EPSILON, D, W 
+    global N, PHI, DELTA, EPSILON, D, W, min_freq 
     #count_min_sketch is an hash table with D rows and W columns
-    min_freq = N * PHI #minimum frequence to be a frequent item
 
     batch_size = batch.count()
-    # If we already have enough points (> THRESHOLD), skip this batch.
-    if streamLength[0]>=THRESHOLD:
+    # If we already have enough points (> N), skip this batch.
+    if StreamLength[0]>=N:
         return
-    streamLength[0] += batch_size
+    StreamLength[0] += batch_size
 
     item_freq = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda a, b: a+b).collectAsMap() # collectAsMap() returns the RDD as a dictionary 
     # collectAsMap() returns the RDD as a dictionary 
     #we created a dictionary with key = item, value = frequency of the item
     for x, c in item_freq.items():
 
-        ExactCounting(x, c, min_freq)
-        StickySampling(x, c, min_freq)
-        CountMinSketch(x, c, min_freq)
+        ExactCounting(x, c)
+        StickySampling(x, c)
+        CountMinSketch(x, c)
     
-    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
-    true_frequent_items = {x : freq for x, freq in histogram.items() if freq >= min_freq}
     
-    if streamLength[0] >= THRESHOLD:
+    if StreamLength[0] >= N:
         stopping_condition.set()
 
 if __name__ =="__main__":
@@ -157,8 +154,8 @@ if __name__ =="__main__":
     stopping_condition = threading.Event() # semafor
 
 
-    THRESHOLD = int(sys.argv[1])
-    print(f'n = {THRESHOLD}')
+    N = int(sys.argv[1]) #maximum number of elements that can be processed
+    print(f'n = {N}')
     PHI = int(sys.argv[2]) #frequency threshold in range (0,1)
     print(f'phi = {PHI}')
     EPSILON = float(sys.argv[3]) #accuracy parameter in range (0, PHI)
@@ -173,7 +170,7 @@ if __name__ =="__main__":
     print(f'port = {PORTEXP}')
 
 
-    streamLength = [0]
+    StreamLength = [0]
     exact_frequency = {}
     true_frequent_items = {}
 
@@ -182,7 +179,7 @@ if __name__ =="__main__":
     
     output_countmin = {} #to print
     
-
+    min_freq = N * PHI
     P=8191
     items_freq = {} #dict of key-value pairs item : freq for count-min sketch
     count_min_sketch = [] 
@@ -202,7 +199,10 @@ if __name__ =="__main__":
     # that the same data might be processed multiple times in case of failure.
     stream.foreachRDD(lambda time, batch: Container(time, batch))    
 
-    
+    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
+    true_frequent_items = {x : freq for x, freq in exact_frequency.items() if freq >= min_freq}
+
+
     # MANAGING STREAMING SPARK CONTEXT
     print("Starting streaming engine")
     ssc.start()
