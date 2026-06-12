@@ -9,22 +9,16 @@ import numpy as np
 ################
 #     QUESTIONS
 ################
-# 1) the phi must be the same for both algorithm? Yes
-# 2) are there any value of hyperparameters we can tend to? Given by prof
+
 
 ################
 #    THINKGS TO CHECK BETTER
 ################
-# 1) where to put variables a, b, p, C: in the hash table
-# 2) starting values of delta, epsilon
-# 3) how to return the value in count-min sketch
 
 
 ################
 #    MISSING
 ################
-# 1) compute exact frequency
-
 
 
 N = -1 # To be set via command line
