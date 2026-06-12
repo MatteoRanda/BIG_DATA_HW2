@@ -27,7 +27,7 @@ import numpy as np
 
 
 
-N = -1 # To be set via command line
+THRESHOLD = -1 # To be set via command line
 
 class HashTable:
     def __init__(self, w, a, b, p):
@@ -41,7 +41,7 @@ class HashTable:
     def __len__(self):
         return len(self.table)
 
-    def __contain__(self, key, default = None):
+    def __contains__(self, key, default = None):
         #if missing key, return default value
         try:
             return self[key]
@@ -69,21 +69,15 @@ class HashTable:
         return index
 
 #################### MUST BE CHANGED
-def ExactCounting(x, c, min_freq):
-    global true_frequent_items
-    frequency = {}
-    if x in frequency.keys():
-        frequency[x] += 1
-        if x in true_frequent_items.keys():
-            true_frequent_items[x] += c
-        else:
-            if frequency[x] >= min_freq:
-                true_frequent_items[x] = c
+def ExactCounting(x, c):
+    global exact_frequency
+    if x in exact_frequency.keys():
+        exact_frequency[x] += c
     else:
-        frequency[x] = 1
+        exact_frequency[x] = c
+    
 
-
-def StickySampling(x, c, min_freq):
+def StickySampling(x, c):
     """f(x) is the frequency of the item.
     The check to add a frequent item in the output is done in the if to avoid a second for cycle.
     However, since we have to compute the frquency, we still count the frequency.
@@ -98,7 +92,6 @@ def StickySampling(x, c, min_freq):
         if np.random.uniform(low = 0.0, high=1.0) < p:
             histogram[x] = c
     
-    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
 
 
 def CountMinSketch(x, c, min_freq):
@@ -124,9 +117,17 @@ def CountMinSketch(x, c, min_freq):
 
 def Container(time, batch):
 
-    global count_min_sketch, output_countmin, histogram, true_frequent_items, N, PHI, DELTA, EPSILON, D, W 
+    global count_min_sketch, output_countmin, true_frequent_items
+    global histogram, exact_frequency 
+    global N, PHI, DELTA, EPSILON, D, W 
     #count_min_sketch is an hash table with D rows and W columns
     min_freq = N * PHI #minimum frequence to be a frequent item
+
+    batch_size = batch.count()
+    # If we already have enough points (> THRESHOLD), skip this batch.
+    if streamLength[0]>=THRESHOLD:
+        return
+    streamLength[0] += batch_size
 
     item_freq = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda a, b: a+b).collectAsMap() # collectAsMap() returns the RDD as a dictionary 
     # collectAsMap() returns the RDD as a dictionary 
@@ -136,7 +137,12 @@ def Container(time, batch):
         ExactCounting(x, c, min_freq)
         StickySampling(x, c, min_freq)
         CountMinSketch(x, c, min_freq)
-
+    
+    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
+    true_frequent_items = {x : freq for x, freq in histogram.items() if freq >= min_freq}
+    
+    if streamLength[0] >= THRESHOLD:
+        stopping_condition.set()
 
 if __name__ =="__main__":
     assert len(sys.argv) == 8, 'USAGE: port, n, phi, epsilon, delta, d, w, portExp'
@@ -166,25 +172,29 @@ if __name__ =="__main__":
     PORTEXP = int(sys.argv[7]) #port number
     print(f'port = {PORTEXP}')
 
+    THRESHOLD = int(sys.argv[2])
+    print("Threshold = ", THRESHOLD)
+
+    streamLength = [0]
+    exact_frequency = {}
     true_frequent_items = {}
 
     histogram = {}
     sticky_sampling = {} #final set of Sticky sampling with the frequent values and their frequencies
     
-    count_min_sketch = {}
     output_countmin = {} #to print
     
 
     P=8191
     items_freq = {} #dict of key-value pairs item : freq for count-min sketch
-    hash_table = [] 
+    count_min_sketch = [] 
     ab_memory = [] #to save the pairs of (a,b)
     for j in range(d):
         a = np.random.randint(1,P-1)
         b = np.random.randint(0,P-1)
         ab_memory.append((a,b))
 
-        hash_table.append(HashTable(w=W, a=a, b=b, p=P))
+        count_min_sketch.append(HashTable(w=W, a=a, b=b, p=P))
 
 
     # CODE TO PROCESS AN UNBOUNDED STREAM OF DATA IN BATCHES
@@ -194,7 +204,7 @@ if __name__ =="__main__":
     # that the same data might be processed multiple times in case of failure.
     stream.foreachRDD(lambda time, batch: Container(time, batch))    
 
-
+    
     # MANAGING STREAMING SPARK CONTEXT
     print("Starting streaming engine")
     ssc.start()
