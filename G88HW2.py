@@ -14,6 +14,9 @@ import numpy as np
 ################
 #    THINKGS TO CHECK BETTER
 ################
+# 1) bad results on Sticky Sampling, getting 0 or 1  frequent items
+# 2) bad results on Count Min Sketch, getting too many frequent items
+
 
 
 ################
