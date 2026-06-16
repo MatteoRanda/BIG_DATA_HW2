@@ -86,8 +86,10 @@ def StickySampling(x, c):
     if x in histogram:
         histogram[x] += c
     else:
-        if np.random.uniform(low = 0.0, high=1.0) < pr:
-            histogram[x] = c
+        for i in range(c):
+            if np.random.uniform(low = 0.0, high=1.0) <= pr:
+                histogram[x] = c - i
+                break
     
 
 
