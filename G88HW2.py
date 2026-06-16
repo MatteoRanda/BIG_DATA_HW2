@@ -177,6 +177,7 @@ if __name__ =="__main__":
     output_countmin = {} #to print
     
     min_freq = N * PHI
+    app_min_freq = N * (PHI-EPSILON)
     P=8191
     items_freq = {} #dict of key-value pairs item : freq for count-min sketch
     count_min_sketch = [] 
@@ -214,7 +215,7 @@ if __name__ =="__main__":
     ssc.stop(False, False)
     print("Streaming engine stopped")
 
-    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= min_freq}
+    sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= app_min_freq}
     true_frequent_items = {x : freq for x, freq in exact_frequency.items() if freq >= min_freq}
 
     # COMPUTE AND PRINT FINAL STATISTICS
