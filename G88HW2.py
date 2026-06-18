@@ -121,16 +121,17 @@ def Container(time, batch):
     # If we already have enough points (> N), skip this batch.
     if StreamLength[0]>=N:
         return
-    StreamLength[0] += batch_size
 
     item_freq = batch.map(lambda s: (int(s), 1)).collect()  
 
     for x,c in item_freq:
         # c is always 1
+        if StreamLength[0] >= N:
+            break
         ExactCounting(x, 1)
         StickySampling(x, 1)
         CountMinSketch(x, 1)
-    
+        StreamLength[0] += 1
     
     if StreamLength[0] >= N:
         stopping_condition.set()
