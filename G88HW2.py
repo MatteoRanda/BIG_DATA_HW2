@@ -11,11 +11,10 @@ import numpy as np
 ################
 
 
+
 ################
 #    THINKGS TO CHECK BETTER
 ################
-# 1) bad results on Sticky Sampling, getting 0 or 1  frequent items
-# 2) bad results on Count Min Sketch, getting too many frequent items
 
 
 
@@ -65,7 +64,7 @@ class HashTable:
         index = self._hash(key)
         return index
 
-#################### MUST BE CHANGED
+
 def ExactCounting(x, c):
     global exact_frequency
     if x in exact_frequency.keys():
@@ -86,14 +85,11 @@ def StickySampling(x, c):
     if x in histogram:
         histogram[x] += c
     else:
-        for i in range(c):
-            if np.random.uniform(low = 0.0, high=1.0) <= pr:
-                histogram[x] = c - i
-                break
-    
+        if np.random.uniform(low = 0.0, high=1.0) <= pr:
+            histogram[x] = c
 
 
-def CountMinSketch(x, c):
+def CountMinSketch(x):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row;
@@ -105,7 +101,7 @@ def CountMinSketch(x, c):
     minimum = float('inf')
 
     for j in range(D):
-        count_min_sketch[j].insert(x, c)
+        count_min_sketch[j].insert(x, 1)
 
         if count_min_sketch[j][x] < minimum:
             minimum = count_min_sketch[j][x]
@@ -127,11 +123,10 @@ def Container(time, batch):
         return
     StreamLength[0] += batch_size
 
-    item_freq = batch.map(lambda s: (int(s), 1)).reduceByKey(lambda a, b: a+b).collectAsMap() # collectAsMap() returns the RDD as a dictionary 
-    # collectAsMap() returns the RDD as a dictionary 
-    #we created a dictionary with key = item, value = frequency of the item
-    for x, c in item_freq.items():
+    item_freq = batch.map(lambda s: (int(s), 1)).collect()  
 
+    for x, c in item_freq.items():
+        # c is always 1
         ExactCounting(x, c)
         StickySampling(x, c)
         CountMinSketch(x, c)
