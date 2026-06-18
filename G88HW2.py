@@ -218,16 +218,11 @@ if __name__ =="__main__":
         print(f'Item = {item} True Freq = {true_frequent_items[item]}')
     print()
     print('STICKY SAMPLING')
-    print(len(sticky_sampling))
     for item in sorted(sticky_sampling.keys()):
-        if sticky_sampling[item] >= N*PHI:
-            print(f'Item = {item} True Freq = {sticky_sampling[item]}, frequent')
-        if sticky_sampling[item] >=  N*(PHI-EPSILON) and sticky_sampling[item] <  N*PHI:
-            print(f'Item = {item} True Freq = {sticky_sampling[item]}, almost')
+        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
 #        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
     print()
     print('COUNT-MIN SKETCH')
-    print(len(output_countmin))
     for item in sorted(output_countmin.keys()):
         print(f'Item = {item} True Freq = {output_countmin[item]}')
     
