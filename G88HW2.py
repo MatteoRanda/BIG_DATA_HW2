@@ -227,7 +227,11 @@ if __name__ =="__main__":
     print('STICKY SAMPLING')
     print(len(sticky_sampling))
     for item in sticky_sampling.keys():
-        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
+        if sticky_sampling[item] >= N*PHI:
+            print(f'Item = {item} True Freq = {sticky_sampling[item]}, frequent')
+        if sticky_sampling[item] >=  N*(PHI-EPSILON) and sticky_sampling[item] <  N*PHI:
+            print(f'Item = {item} True Freq = {sticky_sampling[item]}, almost')
+#        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
     print('COUNT-MIN SKETCH')
     print(len(output_countmin))
     for item in output_countmin.keys():
