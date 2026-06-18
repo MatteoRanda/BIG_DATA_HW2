@@ -125,7 +125,7 @@ def Container(time, batch):
 
     item_freq = batch.map(lambda s: (int(s), 1)).collect()  
 
-    for x, c in item_freq.items():
+    for x, c in item_freq:
         # c is always 1
         ExactCounting(x, c)
         StickySampling(x, c)
