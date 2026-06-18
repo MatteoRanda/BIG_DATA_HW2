@@ -125,11 +125,11 @@ def Container(time, batch):
 
     item_freq = batch.map(lambda s: (int(s), 1)).collect()  
 
-    for x, c in item_freq:
+    for x in item_freq:
         # c is always 1
-        ExactCounting(x, c)
-        StickySampling(x, c)
-        CountMinSketch(x, c)
+        ExactCounting(x[0], 1)
+        StickySampling(x[0], 1)
+        CountMinSketch(x[0], 1)
     
     
     if StreamLength[0] >= N:
