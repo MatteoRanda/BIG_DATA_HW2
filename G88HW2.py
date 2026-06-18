@@ -89,7 +89,7 @@ def StickySampling(x, c):
             histogram[x] = c
 
 
-def CountMinSketch(x):
+def CountMinSketch(x,c):
     """
     d is the number of rows of the hash tables.
     Idea: create a object of HashTable class for each row;
@@ -125,11 +125,11 @@ def Container(time, batch):
 
     item_freq = batch.map(lambda s: (int(s), 1)).collect()  
 
-    for x in item_freq:
+    for x,c in item_freq:
         # c is always 1
-        ExactCounting(x[0], 1)
-        StickySampling(x[0], 1)
-        CountMinSketch(x[0], 1)
+        ExactCounting(x, 1)
+        StickySampling(x, 1)
+        CountMinSketch(x, 1)
     
     
     if StreamLength[0] >= N:
