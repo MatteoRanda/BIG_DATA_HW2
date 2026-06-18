@@ -221,12 +221,11 @@ if __name__ =="__main__":
     print('STICKY SAMPLING')
     print(f'Size of dictionary = {len(sticky_sampling)}')
     for item in sorted(sticky_sampling.keys()):
-        if sticky_sampling[item] >= N*PHI:
-            print(f'Item = {item} True Freq = {sticky_sampling[item]}')
+        print(f'Item = {item} True Freq = {exact_frequency[item]}')
 #        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
     print()
     print('COUNT-MIN SKETCH')
     print(f'Size of F_CM = {len(output_countmin.keys())}')
     for item in sorted(output_countmin.keys()):
-        print(f'Item = {item} True Freq = {output_countmin[item]}')
+        print(f'Item = {item} True Freq = {exact_frequency[item]}')
     
