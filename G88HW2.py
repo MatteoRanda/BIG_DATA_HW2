@@ -225,8 +225,11 @@ if __name__ =="__main__":
     for item in true_frequent_items.keys(): 
         print(f'Item = {item} True Freq = {true_frequent_items[item]}')
     print('STICKY SAMPLING')
+    print(len(sticky_sampling))
     for item in sticky_sampling.keys():
         print(f'Item = {item} True Freq = {sticky_sampling[item]}')
     print('COUNT-MIN SKETCH')
+    print(len(output_countmin))
     for item in output_countmin.keys():
         print(f'Item = {item} True Freq = {output_countmin[item]}')
+    
