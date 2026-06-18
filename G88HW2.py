@@ -180,8 +180,8 @@ if __name__ =="__main__":
     count_min_sketch = [] 
     ab_memory = [] #to save the pairs of (a,b)
     for j in range(D):
-        a = np.random.randint(1,P-1)
-        b = np.random.randint(0,P-1)
+        a = np.random.randint(1,P)
+        b = np.random.randint(0,P)
         ab_memory.append((a,b))
 
         count_min_sketch.append(HashTable(w=W, a=a, b=b, p=P))
@@ -198,11 +198,8 @@ if __name__ =="__main__":
 
 
     # MANAGING STREAMING SPARK CONTEXT
-    print("Starting streaming engine")
     ssc.start()
-    print("Waiting for shutdown condition")
     stopping_condition.wait()
-    print("Stopping the streaming engine")
 
     # The following command stops the execution of the stream. The first boolean, if true, also
     # stops the SparkContext, while the second boolean, if true, stops gracefully by waiting for
@@ -210,25 +207,27 @@ if __name__ =="__main__":
     # program ends, but they will not affect the correctness.
 
     ssc.stop(False, False)
-    print("Streaming engine stopped")
 
     sticky_sampling = {x : freq for x, freq in histogram.items() if freq >= app_min_freq}
     true_frequent_items = {x : freq for x, freq in exact_frequency.items() if freq >= min_freq}
 
     # COMPUTE AND PRINT FINAL STATISTICS
+    print()
     print('TRUE FREQUENT ITEMS')
-    for item in true_frequent_items.keys(): 
+    for item in sorted(true_frequent_items.keys()): 
         print(f'Item = {item} True Freq = {true_frequent_items[item]}')
+    print()
     print('STICKY SAMPLING')
     print(len(sticky_sampling))
-    for item in sticky_sampling.keys():
+    for item in sorted(sticky_sampling.keys()):
         if sticky_sampling[item] >= N*PHI:
             print(f'Item = {item} True Freq = {sticky_sampling[item]}, frequent')
         if sticky_sampling[item] >=  N*(PHI-EPSILON) and sticky_sampling[item] <  N*PHI:
             print(f'Item = {item} True Freq = {sticky_sampling[item]}, almost')
 #        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
+    print()
     print('COUNT-MIN SKETCH')
     print(len(output_countmin))
-    for item in output_countmin.keys():
+    for item in sorted(output_countmin.keys()):
         print(f'Item = {item} True Freq = {output_countmin[item]}')
     
