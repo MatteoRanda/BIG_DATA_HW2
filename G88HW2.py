@@ -219,7 +219,7 @@ if __name__ =="__main__":
         print(f'Item = {item} True Freq = {true_frequent_items[item]}')
     print()
     print('STICKY SAMPLING')
-    print(f'Size of dictionary = {len(sticky_sampling)}')
+    print(f'Size of dictionary = {len(histogram)}')
     for item in sorted(sticky_sampling.keys()):
         print(f'Item = {item} True Freq = {exact_frequency[item]}')
 #        print(f'Item = {item} True Freq = {sticky_sampling[item]}')
